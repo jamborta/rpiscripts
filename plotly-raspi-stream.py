@@ -38,13 +38,15 @@ layout = Layout(
 
 fig = Figure(data=[trace1,trace2], layout=layout)
 
-print py.plot(fig, filename='Temperature monitor')
+print py.plot(fig, filename='Temperature monitor', fileopt='extend')
 
 stream1 = py.Stream(stream_token1)
 stream1.open()
 
 stream2 = py.Stream(stream_token2)
 stream2.open()
+
+f = open('sensor_reading.csv','a')
 
 try:
 	#the main sensor reading loop
@@ -57,10 +59,12 @@ try:
 		i = strftime("%Y-%m-%d %H:%M:%S")
         	stream1.write({'x': i, 'y': temp1})
         	stream2.write({'x': i, 'y': temp2})
-        	# delay between stream posts
-        	time.sleep(5)
+        	f.write(i+","+str(temp1)+","+str(temp2)+"\n")
+		# delay between stream posts
+        	time.sleep(1)
 except KeyboardInterrupt:
 	print "Shuting down"
 	stream1.close()
 	stream2.close()
+	f.close()
 	sys.exit()
