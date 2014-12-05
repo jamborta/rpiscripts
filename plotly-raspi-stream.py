@@ -23,18 +23,20 @@ py.sign_in(username, api_key)
 trace0 = Scatter(
     x=[],
     y=[],
+    name="bedroom",
     stream=dict(
         token=stream_token1,
-	maxpoints=172800
+	    maxpoints=172800
     )
 )
 
 trace1 = Scatter(
     x=[],
     y=[],
+    name="living room",
     stream=dict(
         token=stream_token2,
-	maxpoints=172800
+	    maxpoints=172800
     )
 )
 
@@ -62,6 +64,7 @@ def readSensor(code):
     if ser.inWaiting() > 12:
         logging.info(ser.read(ser.inWaiting()))
     ser.write("a%sTEMP-----" % code)
+    time.sleep(1)
     if ser.inWaiting() == 12:
         return float(ser.read(12)[7:])
     else:
@@ -70,13 +73,14 @@ def readSensor(code):
 
 
 try:
-	#the main sensor reading loop
-	while True:
-		logging.info("reading sensor")	
+    #the main sensor reading loop
+    while True:
+        logging.info("reading sensor")
         temp1 = readSensor("AA")
         temp2 = readSensor("AB")
         if temp1 is None or temp2 is None:
             time.sleep(30)
+            continue
         i = strftime("%Y-%m-%d %H:%M:%S")
         logging.info("sending stream")
         if abs(prev_temp1 - temp1) < 50:
@@ -91,9 +95,9 @@ try:
             temp2 = None
         logging.info("writing to db")
         f.write(i+","+str(temp1)+","+str(temp2)+"\n")
-		# delay between stream posts
+        # delay between stream posts
         time.sleep(30)
-		#sent heartbeat
+        #sent heartbeat
         stream1.heartbeat()
         stream2.heartbeat()
         time.sleep(30)
