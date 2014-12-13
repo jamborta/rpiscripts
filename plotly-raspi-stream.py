@@ -78,19 +78,27 @@ prev_temp3 = 0
 prev_temp4 = 0
 
 
-def readSensor(code):
+def readSensor(code, sleep="060S"):
     if ser.inWaiting() > 12:
         logging.info(ser.read(ser.inWaiting()))
     ser.write("a%sTEMP-----" % code)
     time.sleep(1)
-    if ser.inWaiting() == 12:
-        return float(ser.read(12)[7:])
+    r = ser.read(ser.inWaiting())
+    ser.write("a%sSLEEP%s" % (code,sleep))
+    time.sleep(1)
+    logging.info("SLEEP command: " + ser.read(ser.inWaiting()))
+    if len(r) == 12 and r[3:7] == "TEMP":
+        temp = float(r[7:])
+        logging.info("Temp read successful (%s) (%s)" % (code, str(temp)))
+        return float(r[7:])
+    elif len(r) == 0:
+        logging.info("No message from %s" % code)
     else:
-        logging.info("Extra messages waiting (%s): %s" % (code, ser.read(ser.inWaiting())))
+        logging.info("Extra messages waiting (%s): %s" % (code, r))
         return None
 
 def check_temp_difference(prev_temp, temp, stream):
-    if temp is not None and abs(prev_temp - temp) < 50:
+    if prev_temp is not None and temp is not None and abs(prev_temp - temp) < 50:
         try:
             stream.write({'x': i, 'y': temp})
         except Exception as e:
@@ -100,7 +108,7 @@ def check_temp_difference(prev_temp, temp, stream):
                 stream.open()
         return (temp, temp)
     else:
-        return (prev_temp, None)
+        return (None, None)
 
 def send_heartbeat(stream):
     try:
@@ -125,6 +133,7 @@ try:
         (prev_temp4, temp4) = check_temp_difference(prev_temp4, temp4, stream4)
         logging.info("writing to db")
         f.write(i+","+str(temp1)+","+str(temp2)+","+str(temp3)+","+str(temp4)+"\n")
+        f.flush()
         # delay between stream posts
         time.sleep(30)
         #sent heartbeat
