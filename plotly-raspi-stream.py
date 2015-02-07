@@ -26,28 +26,28 @@ trace0 = Scatter(
     x=[],
     y=[],
     name="bedroom",
-    stream=dict(token=stream_token1,maxpoints=172800)
+    stream=dict(token=stream_token1,maxpoints=576)
 )
 
 trace1 = Scatter(
     x=[],
     y=[],
     name="living room",
-    stream=dict(token=stream_token2,maxpoints=172800)
+    stream=dict(token=stream_token2,maxpoints=576)
 )
 
 trace2 = Scatter(
     x=[],
     y=[],
     name="guest room",
-    stream=dict(token=stream_token3,maxpoints=172800)
+    stream=dict(token=stream_token3,maxpoints=576)
 )
 
 trace3 = Scatter(
     x=[],
     y=[],
     name="outside",
-    stream=dict(token=stream_token4,maxpoints=172800)
+    stream=dict(token=stream_token4,maxpoints=576)
 )
 
 layout = Layout(
@@ -78,7 +78,7 @@ prev_temp3 = 0
 prev_temp4 = 0
 
 
-def readSensor(code, sleep="060S"):
+def readSensor(code, sleep="005M"):
     if ser.inWaiting() > 12:
         logging.info(ser.read(ser.inWaiting()))
     ser.write("a%sTEMP-----" % code)
@@ -107,6 +107,8 @@ def check_temp_difference(prev_temp, temp, stream):
                 logging.info("Opening stream")
                 stream.open()
         return (temp, temp)
+    elif temp is None:
+        return (prev_temp, None)
     else:
         return (None, None)
 
@@ -137,11 +139,12 @@ try:
         # delay between stream posts
         time.sleep(30)
         #sent heartbeat
-        send_heartbeat(stream1)
-        send_heartbeat(stream2)
-        send_heartbeat(stream3)
-        send_heartbeat(stream4)
-        time.sleep(30)
+        for i in range(0,9):
+            send_heartbeat(stream1)
+            send_heartbeat(stream2)
+            send_heartbeat(stream3)
+            send_heartbeat(stream4)
+            time.sleep(30)
 except KeyboardInterrupt:
     print "Shuting down"
     stream1.close()
