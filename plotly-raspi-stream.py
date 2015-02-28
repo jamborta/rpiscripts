@@ -70,8 +70,6 @@ stream3.open()
 stream4 = py.Stream(stream_token4)
 stream4.open()
 
-f = open('sensor_reading.csv','a')
-
 prev_temp1 = 0
 prev_temp2 = 0
 prev_temp3 = 0
@@ -134,8 +132,10 @@ try:
         (prev_temp3, temp3) = check_temp_difference(prev_temp3, temp3, stream3)
         (prev_temp4, temp4) = check_temp_difference(prev_temp4, temp4, stream4)
         logging.info("writing to db")
+        f = open('sensor_reading.csv','a')
         f.write(i+","+str(temp1)+","+str(temp2)+","+str(temp3)+","+str(temp4)+"\n")
         f.flush()
+        f.close()
         # delay between stream posts
         time.sleep(30)
         #sent heartbeat
