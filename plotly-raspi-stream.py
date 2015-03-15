@@ -76,7 +76,7 @@ prev_temp3 = 0
 prev_temp4 = 0
 
 
-def readSensor(code, sleep="005M"):
+def readSensor(code, sleep="015M"):
     if ser.inWaiting() > 12:
         logging.info(ser.read(ser.inWaiting()))
     ser.write("a%sTEMP-----" % code)
@@ -121,6 +121,8 @@ try:
     #the main sensor reading loop
     while True:
         logging.info("reading sensor")
+        #wait just a bit here so all sensors wake up
+        time.sleep(0.5)
         temp1 = readSensor("AA")
         temp2 = readSensor("AB")
         temp3 = readSensor("AC")
@@ -139,7 +141,7 @@ try:
         # delay between stream posts
         time.sleep(30)
         #sent heartbeat
-        for i in range(0,9):
+        for i in range(0,29):
             send_heartbeat(stream1)
             send_heartbeat(stream2)
             send_heartbeat(stream3)
