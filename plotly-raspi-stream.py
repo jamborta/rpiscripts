@@ -77,12 +77,13 @@ prev_temp4 = 0
 
 
 def readSensor(code, sleep="015M"):
-    if ser.inWaiting() > 12:
+    if ser.inWaiting() > 0:
         logging.info(ser.read(ser.inWaiting()))
     ser.write("a%sTEMP-----" % code)
     time.sleep(1)
     r = ser.read(ser.inWaiting())
     ser.write("a%sSLEEP%s" % (code,sleep))
+    time.sleep(1)
     logging.info("SLEEP command: " + ser.read(ser.inWaiting()))
     if len(r) == 12 and r[3:7] == "TEMP":
         temp = float(r[7:])
@@ -121,7 +122,7 @@ try:
     while True:
         logging.info("reading sensor")
         #wait just a bit here so all sensors wake up
-        time.sleep(2)
+        time.sleep(5)
         temp1 = readSensor("AA")
         temp2 = readSensor("AB")
         temp3 = readSensor("AC")
