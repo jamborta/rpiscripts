@@ -5,6 +5,7 @@ from time import strftime
 import serial
 import sys
 import logging
+import re
 
 FORMAT = "%(asctime)-15s %(message)s"
 logging.basicConfig(format=FORMAT,level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S')
@@ -19,6 +20,13 @@ stream_token1 = 'tlkyiiy8ai'
 stream_token2 = 'katvhtjay0'
 stream_token3 = '4uknclomb5'
 stream_token4 = 'w8mbk9nv86'
+
+sensor_status = {
+    "AA": "AWAKE",
+    "AB": "AWAKE",
+    "AC": "AWAKE",
+    "AD": "AWAKE"
+}
 
 py.sign_in(username, api_key)
 
@@ -75,25 +83,46 @@ prev_temp2 = 0
 prev_temp3 = 0
 prev_temp4 = 0
 
+def setStatus(status, message):
+    sensors_awake = [i[1:3] for i in message.split('----') if status in i]
+    for s in sensors_awake:
+        sensor_status[s] = status
+        logging.info("Setting sensor %s %s" % (s, status))
+    return message
 
 def readSensor(code, sleep="015M"):
-    if ser.inWaiting() > 0:
-        logging.info(ser.read(ser.inWaiting()))
-    ser.write("a%sTEMP-----" % code)
-    time.sleep(1)
-    r = ser.read(ser.inWaiting())
-    ser.write("a%sSLEEP%s" % (code,sleep))
-    time.sleep(1)
-    logging.info("SLEEP command: " + ser.read(ser.inWaiting()))
-    if len(r) == 12 and r[3:7] == "TEMP":
-        temp = float(r[7:])
-        logging.info("Temp read successful (%s) (%s)" % (code, str(temp)))
-        return float(r[7:])
-    elif len(r) == 0:
-        logging.info("No message from %s" % code)
+    logging.info("Reading sensor %s" % code)
+    cc = 0
+    while True:
+        time.sleep(1)
+        if ser.inWaiting() > 0:
+            message = setStatus("AWAKE", ser.read(ser.inWaiting()))
+            logging.info(message)
+        if sensor_status[code] == "AWAKE" and cc > 5:
+            break
+        cc = cc + 1
+    if sensor_status[code] == "AWAKE":
+        ser.write("a%sTEMP-----" % code)
+        time.sleep(1)
+        r = ser.read(ser.inWaiting())
+        logging.info("Temp read command: %s" % setStatus("AWAKE", r))
+        c = 0
+        while sensor_status[code] == "AWAKE" and c < 5:
+            ser.write("a%sSLEEP%s" % (code,sleep))
+            time.sleep(1)
+            logging.info("SLEEP command: " + setStatus("SLEEPING", ser.read(ser.inWaiting())))
+            c = c + 1
+        if code + "TEMP" in r:
+            temp = re.sub(r"[^0-9\.]+", '', r)
+            logging.info("Temp read successful (%s) (%s)" % (code, str(temp)))
+            return float(temp)
+        elif len(r) == 0:
+            logging.info("No message from %s" % code)
+        else:
+            logging.info("Extra messages waiting (%s): %s" % (code, r))
+            return None
     else:
-        logging.info("Extra messages waiting (%s): %s" % (code, r))
-        return None
+        logging.info("Sensor %s is not awake" % code)
 
 def check_temp_difference(prev_temp, temp, stream):
     if prev_temp is not None and temp is not None and abs(prev_temp - temp) < 50:
@@ -120,13 +149,14 @@ def send_heartbeat(stream):
 try:
     #the main sensor reading loop
     while True:
-        logging.info("reading sensor")
+        logging.info("reading sensors")
         #wait just a bit here so all sensors wake up
-        time.sleep(5)
+        time.sleep(2)
         temp1 = readSensor("AA")
         temp2 = readSensor("AB")
         temp3 = readSensor("AC")
         temp4 = readSensor("AD")
+        logging.info("Sensor status: %s" % sensor_status)
         i = strftime("%Y-%m-%d %H:%M:%S")
         logging.info("sending stream")
         (prev_temp1, temp1) = check_temp_difference(prev_temp1, temp1, stream1)

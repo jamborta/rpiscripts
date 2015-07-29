@@ -1,0 +1,14 @@
+# check the calendar for new timers every 2 hours
+59 */2 * * * /usr/local/bin/lightwaverf update_timers 60 1440 true > /tmp/update_timers.out 2>&1
+# off peak, check every 5 mins
+*/5 0-5,9-18,20-23 * * * /usr/local/bin/lightwaverf timer 5 true > /tmp/timer.out 2>&1
+# peak times, check every minute
+* 6-8,19 * * * /usr/local/bin/lightwaverf timer 1 true > /tmp/timer.out 2>&1
+*/1 * * * * /usr/local/bin/lightwaverf energy > /tmp/energy.out 2>&1
+*/5 * * * * /usr/local/bin/lightwaverf summarise 7 true > /tmp/summarise.out 2>&1
+15 * * * * /usr/local/bin/lightwaverf web > /var/www/index.html 2> /tmp/web.err
+
+*/5 * * * * sh /home/pi/rpiscripts/ipchange.sh
+0 */6 * * * /home/pi/dropbox_uploader/dropbox_uploader.sh upload /home/pi/sensor_reading.csv /
+0 */6 * * * /home/pi/dropbox_uploader/dropbox_uploader.sh upload /home/pi/lightwaverf.log /
+* 2 * * * /usr/sbin/logrotate -v /home/pi/rpiscripts/logrotate/logrotate.conf -s /home/pi/rpiscripts/logrotate/status > /home/pi/rpiscripts/logrotate/logrotate.log 2>&1
